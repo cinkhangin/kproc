@@ -4,7 +4,7 @@ plugins {
     `maven-publish`
 }
 
-group = "com.naulian.kproc"
+group = "com.naulian.processing"
 version = "0.0.1"
 
 repositories {
