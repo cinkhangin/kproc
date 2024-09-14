@@ -32,127 +32,135 @@ import java.io.InputStream;
 
 /**
  * Deal with issues related to macOS application behavior.
- *
+ * <p>
  * We have to register a quit handler to safely shut down the sketch,
  * otherwise OS X will just kill the sketch when a user hits Cmd-Q.
  * In addition, we have a method to set the dock icon image,
  * so we look more like a native application.
- *
+ * <p>
  * This is a stripped-down version of what's in processing.app.platform to fix
  * <a href="https://github.com/processing/processing/issues/3301">3301</a>.
  */
 public class ThinkDifferent {
-  static private Desktop desktop;
-  static private Taskbar taskbar;
+    static private Desktop desktop;
+    static private Taskbar taskbar;
 
-  // True if user has tried to quit once. Prevents us from canceling the quit
-  // call if the sketch is held up for some reason, like an exception that's
-  // managed to put the sketch in a bad state.
-  static boolean attemptedQuit;
-
-
-  /**
-   * Initialize the sketch with the quit handler.
-   *
-   * Initialize the sketch with the quit handler such that, if there is no known
-   * crash, the application will not exit on its own if this is the first quit
-   * attempt.
-   *
-   * @param sketch The sketch whose quit handler callback should be set.
-   */
-  static public void init(final PApplet sketch) {
-    getDesktop().setQuitHandler((event, quitResponse) -> {
-      sketch.exit();
-
-      boolean noKnownCrash = PApplet.uncaughtThrowable == null;
-
-      if (noKnownCrash && !attemptedQuit) {  // haven't tried yet
-        quitResponse.cancelQuit();  // tell OS X we'll handle this
-        attemptedQuit = true;
-      } else {
-        quitResponse.performQuit();  // just force it this time
-      }
-    });
-  }
+    // True if user has tried to quit once. Prevents us from canceling the quit
+    // call if the sketch is held up for some reason, like an exception that's
+    // managed to put the sketch in a bad state.
+    static boolean attemptedQuit;
 
 
-  /**
-   * Remove the quit handler.
-   */
-  static public void cleanup() {
-    getDesktop().setQuitHandler(null);
-  }
+    /**
+     * Initialize the sketch with the quit handler.
+     * <p>
+     * Initialize the sketch with the quit handler such that, if there is no known
+     * crash, the application will not exit on its own if this is the first quit
+     * attempt.
+     *
+     * @param sketch The sketch whose quit handler callback should be set.
+     */
+    static public void init(final PApplet sketch) {
+        getDesktop().setQuitHandler((event, quitResponse) -> {
+            sketch.exit();
 
+            boolean noKnownCrash = PApplet.uncaughtThrowable == null;
 
-  /**
-   * Called via reflection from PSurfaceAWT and others, set the dock icon image.
-   * @param image The image to provide for Processing icon.
-   */
-  static public void setIconImage(Image image) {
-    getTaskbar().setIconImage(image);
-  }
-
-
-  /**
-   * Get the taskbar where OS visual settings can be provided.
-   * @return Cached taskbar singleton instance.
-   */
-  static private Taskbar getTaskbar() {
-    if (taskbar == null) {
-      taskbar = Taskbar.getTaskbar();
+            if (noKnownCrash && !attemptedQuit) {  // haven't tried yet
+                quitResponse.cancelQuit();  // tell OS X we'll handle this
+                attemptedQuit = true;
+            } else {
+                quitResponse.performQuit();  // just force it this time
+            }
+        });
     }
-    return taskbar;
-  }
 
 
-  /**
-   * Get the desktop where OS behavior can be provided.
-   * @return Cached desktop singleton instance.
-   */
-  static private Desktop getDesktop() {
-    if (desktop == null) {
-      desktop = Desktop.getDesktop();
+    /**
+     * Remove the quit handler.
+     */
+    static public void cleanup() {
+        getDesktop().setQuitHandler(null);
     }
-    return desktop;
-  }
 
 
-  // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    /**
+     * Called via reflection from PSurfaceAWT and others, set the dock icon image.
+     *
+     * @param image The image to provide for Processing icon.
+     */
+    static public void setIconImage(Image image) {
+        getTaskbar().setIconImage(image);
+    }
 
 
-  static native public void hideMenuBar();
-
-  static native public void showMenuBar();
-
-  // Used by Python (Jython) Mode to bring windows to the front
-  static native public void activateIgnoringOtherApps();
-
-
-  static {
-    final String NATIVE_FILENAME = "libDifferent.jnilib";
-    try {
-      File temp = File.createTempFile("processing", "different");
-      if (temp.delete() && temp.mkdirs()) {
-        temp.deleteOnExit();
-
-        File jnilibFile = new File(temp, NATIVE_FILENAME);
-        InputStream input = ThinkDifferent.class.getResourceAsStream(NATIVE_FILENAME);
-        if (input != null) {
-          if (PApplet.saveStream(jnilibFile, input)) {
-            System.load(jnilibFile.getAbsolutePath());
-
-          } else {
-            System.err.println("Full screen disabled: could not save library");
-          }
-        } else {
-          System.err.println("Full screen disabled: could not load " + NATIVE_FILENAME + " from core.jar");
+    /**
+     * Get the taskbar where OS visual settings can be provided.
+     *
+     * @return Cached taskbar singleton instance.
+     */
+    static private Taskbar getTaskbar() {
+        if (taskbar == null) {
+            taskbar = Taskbar.getTaskbar();
         }
-      } else {
-        System.err.println("Full screen disabled: could not create temporary folder");
-      }
-    } catch (IOException e) {
-      System.err.println("Full screen disabled");
-      e.printStackTrace();
+        return taskbar;
     }
-  }
+
+
+    /**
+     * Get the desktop where OS behavior can be provided.
+     *
+     * @return Cached desktop singleton instance.
+     */
+    static private Desktop getDesktop() {
+        if (desktop == null) {
+            desktop = Desktop.getDesktop();
+        }
+        return desktop;
+    }
+
+
+    // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+
+    static native public void hideMenuBar();
+
+    static native public void showMenuBar();
+
+    // Used by Python (Jython) Mode to bring windows to the front
+    static native public void activateIgnoringOtherApps();
+
+
+    static {
+        final String NATIVE_FILENAME = "processing/core/libDifferent.jnilib";
+
+        /*File file = new File(NATIVE_FILENAME);
+        String path = file.getAbsolutePath();
+        System.out.println(path);*/
+
+        try {
+            File temp = File.createTempFile("processing", "different");
+            if (temp.delete() && temp.mkdirs()) {
+                temp.deleteOnExit();
+                File jnilibFile = new File(temp, NATIVE_FILENAME);
+                InputStream input = ThinkDifferent.class.getResourceAsStream(NATIVE_FILENAME);
+                if (input != null) {
+                    if (PApplet.saveStream(jnilibFile, input)) {
+                        System.load(jnilibFile.getAbsolutePath());
+
+                    } else {
+                        System.err.println("Full screen disabled: could not save library");
+                    }
+                } else {
+                    // suppress the error until it is fixed
+                    //System.err.println("Full screen disabled: could not load " + NATIVE_FILENAME + " from core.jar");
+                }
+            } else {
+                System.err.println("Full screen disabled: could not create temporary folder");
+            }
+        } catch (IOException e) {
+            System.err.println("Full screen disabled");
+            e.printStackTrace();
+        }
+    }
 }

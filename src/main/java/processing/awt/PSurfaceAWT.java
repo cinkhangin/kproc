@@ -36,11 +36,7 @@ import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
-import processing.core.PApplet;
-import processing.core.PConstants;
-import processing.core.PGraphics;
-import processing.core.PImage;
-import processing.core.PSurfaceNone;
+import processing.core.*;
 import processing.event.Event;
 import processing.event.KeyEvent;
 import processing.event.MouseEvent;
